@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notes Apps Data Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-gray-50 font-sans">
+    <div class="min-h-screen">
+        <!-- Header -->
+        <header class="bg-blue-600 text-white shadow-lg">
+            <div class="container mx-auto px-4 py-6">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h1 class="text-2xl font-bold">Notes Apps Data Dashboard</h1>
+                        <p class="text-blue-100">Visualization of collected articles</p>
+                    </div>
+                    <div class="bg-white text-blue-600 px-4 py-2 rounded-lg font-semibold">
+                        Total Articles: {{ total_articles }}
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="container mx-auto px-4 py-8">
+            <!-- Visualization Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <!-- Word Cloud -->
+                <div class="bg-white rounded-xl shadow-md overflow-hidden">
+                    <div class="p-5">
+                        <h2 class="text-xl font-semibold text-gray-800 mb-2">Word Cloud</h2>
+                        <div class="flex justify-center">
+                            <img src="data:image/png;base64,{{ wordcloud_img }}" alt="Word Cloud" class="w-full h-64 object-contain">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Source Distribution -->
+                <div class="bg-white rounded-xl shadow-md overflow-hidden">
+                    <div class="p-5">
+                        <h2 class="text-xl font-semibold text-gray-800 mb-2">Source Distribution</h2>
+                        <div class="flex justify-center">
+                            <img src="data:image/png;base64,{{ source_dist_img }}" alt="Source Distribution" class="w-full h-64 object-contain">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Timeline -->
+                <div class="bg-white rounded-xl shadow-md overflow-hidden">
+                    <div class="p-5">
+                        <h2 class="text-xl font-semibold text-gray-800 mb-2">Collection Timeline</h2>
+                        <div class="flex justify-center">
+                            {% if timeline_img %}
+                                <img src="data:image/png;base64,{{ timeline_img }}" alt="Collection Timeline" class="w-full h-64 object-contain">
+                            {% else %}
+                                <p class="text-gray-500 py-16">No timeline data available</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Articles -->
+            <div class="bg-white rounded-xl shadow-md overflow-hidden">
+                <div class="p-5">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">Recent Articles</h2>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Source</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Link</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                {% for article in recent_articles %}
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm font-medium text-gray-900">{{ article.title }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-gray-600">{{ article.source }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <a href="{{ article.sources }}" target="_blank" class="text-sm text-indigo-600 hover:text-indigo-800 hover:underline">View</a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="bg-gray-100 border-t border-gray-200 py-6 mt-8">
+            <div class="container mx-auto px-4 text-center text-gray-600">
+                <p>Notes Apps Data Dashboard &copy; 2023</p>
+            </div>
+        </footer>
+    </div>
+</body>
+</html>
