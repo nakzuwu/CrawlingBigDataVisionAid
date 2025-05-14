@@ -11,6 +11,8 @@ import base64
 from wordcloud import WordCloud
 from dateutil.parser import parse as date_parse
 import numpy as np
+from matplotlib.ticker import MaxNLocator
+import pandas as pd
 
 app = Flask(__name__)
 
@@ -45,11 +47,31 @@ def generate_wordcloud():
         # Enhanced text cleaning
         words = re.findall(r'\b[a-zA-Z]+\b', all_text.lower())  # Only alphabetic words
         stopwords = {
-            'the', 'and', 'to', 'of', 'a', 'in', 'is', 'it', 'that', 'for', 'on', 'with', 'as', 'at', 'by', 
-            'this', 'be', 'are', 'was', 'were', 'an', 'or', 'you', 'your', 'we', 'our', 'us', 'they', 'them',
-            'their', 'has', 'have', 'had', 'but', 'so', 'if', 'can', 'will', 'would', 'should', 'could', 'about',
-            'from', 'how', 'what', 'when', 'where', 'which', 'who', 'whom', 'why', 'notion', 'todoist', 'evernote', 'one', 'two'
+            'the', 'and', 'to', 'of', 'a', 'in', 'is', 'it', 'that', 'for', 'on', 'with',
+            'as', 'at', 'by', 'this', 'be', 'are', 'was', 'were', 'an', 'or', 'you', 'your',
+            'we', 'our', 'us', 'they', 'them', 'their', 'has', 'have', 'had', 'but', 'so',
+            'if', 'can', 'will', 'would', 'should', 'could', 'about', 'from', 'how', 'what',
+            'when', 'where', 'which', 'who', 'whom', 'why', 'notion', 'todoist', 'evernote',
+            'one', 'two', 'need', 'get', 'nothing', 'day', 'life', 'all', 'these', 'just',
+            'something', 'isnt', 'new', 'off', 'well', 'back', 'thing', 'plus', 'doing',
+            'doesnt', 'there', 'every', 'always', 'somthimes', 'anohter', 'into', 'join',
+            'rather', 'out',
+            'i', 'me', 'my', 'mine', 'myself',
+            'he', 'him', 'his', 'himself',
+            'she', 'her', 'hers', 'herself',
+            'its', 'itself',
+            'ourselves', 'yourselves', 'themselves',
+            'am', 'do', 'does', 'did', 'doing',
+            'up', 'down', 'over', 'under', 'again', 'further', 'then', 'once',
+            'here', 'there', 'because', 'while', 'although', 'even', 'though',
+            'before', 'after', 'during', 'until', 'within', 'without', 'across',
+            'through', 'between', 'among', 'both', 'each', 'few', 'more', 'most',
+            'other', 'some', 'such', 'no', 'nor', 'not', 'only', 'own', 'same',
+            'than', 'too', 'very', 's', 't', 'can', 'will', 'don', 'should', 'now',
+            'also', 'still', 'yet', 'many', 'much', 'way', 'let', 'maybe', 'ok', 'okay',
+            'really', 'actually', 'ever', 'often', 'sometimes', 'always', 'almost'
         }
+
         
         filtered_words = [word for word in words if word not in stopwords and len(word) > 2 and word.isalpha()]
         
@@ -113,40 +135,41 @@ def get_timeline_data():
         if published:
             try:
                 parsed = date_parse(published) if isinstance(published, str) else published
-                dates.append(parsed)
+                dates.append(parsed.date())  # Ambil hanya tanggal (tanpa jam)
             except Exception:
-                continue  # Abaikan data yang tidak bisa diparse
+                continue
 
     if not dates:
-        return None  # Tidak ada tanggal valid, jangan tampilkan grafik
-
-    # Hitung jumlah artikel per hari
-    date_counts = Counter(date.strftime('%Y-%m-%d') for date in dates)
-    if not date_counts:
         return None
 
-    # Urutkan tanggal
-    sorted_dates = sorted(date_counts.items())
-    days = [item[0] for item in sorted_dates]
-    counts = [item[1] for item in sorted_dates]
+    # Hitung jumlah artikel per tanggal
+    df = pd.DataFrame({'date': dates})
+    df = df.value_counts().reset_index(name='count')
+    df = df.rename(columns={0: 'count'})
 
-    # Buat grafik garis
-    plt.figure(figsize=(12, 6))
-    plt.plot(days, counts, marker='o', linestyle='-', color='#4f77aa')
+    # Buat tanggal lengkap harian
+    full_range = pd.date_range(start=df['date'].min(), end=df['date'].max())
+    df = df.set_index('date').reindex(full_range, fill_value=0)
+    df.index.name = 'date'
+    df = df.reset_index()
+
+    # Plot
+    plt.figure(figsize=(14, 6))
+    plt.plot(df['date'], df['count'], marker='o', linestyle='-', color='#4f77aa')
     plt.xlabel('Date')
     plt.ylabel('Articles Published')
     plt.title('Publication Timeline')
     plt.xticks(rotation=45)
+    plt.gca().yaxis.set_major_locator(MaxNLocator(integer=True))  # <<< HANYA BILANGAN BULAT
     plt.grid(True)
     plt.tight_layout()
 
-    # Simpan sebagai base64
+    # Encode ke base64
     img_buffer = BytesIO()
     plt.savefig(img_buffer, format='PNG', bbox_inches='tight')
     plt.close()
 
     return base64.b64encode(img_buffer.getvalue()).decode('utf-8')
-
 @app.route('/')
 def dashboard():
     """Main dashboard route"""
