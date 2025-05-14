@@ -9,6 +9,7 @@ matplotlib.use('Agg')
 from io import BytesIO
 import base64
 from wordcloud import WordCloud
+from dateutil.parser import parse as date_parse
 import numpy as np
 
 app = Flask(__name__)
@@ -47,7 +48,7 @@ def generate_wordcloud():
             'the', 'and', 'to', 'of', 'a', 'in', 'is', 'it', 'that', 'for', 'on', 'with', 'as', 'at', 'by', 
             'this', 'be', 'are', 'was', 'were', 'an', 'or', 'you', 'your', 'we', 'our', 'us', 'they', 'them',
             'their', 'has', 'have', 'had', 'but', 'so', 'if', 'can', 'will', 'would', 'should', 'could', 'about',
-            'from', 'how', 'what', 'when', 'where', 'which', 'who', 'whom', 'why', 'notion', 'todoist', 'evernote'
+            'from', 'how', 'what', 'when', 'where', 'which', 'who', 'whom', 'why', 'notion', 'todoist', 'evernote', 'one', 'two'
         }
         
         filtered_words = [word for word in words if word not in stopwords and len(word) > 2 and word.isalpha()]
@@ -79,6 +80,7 @@ def generate_wordcloud():
         print(f"Error generating wordcloud: {str(e)}")
         plt.close('all')  # Ensure cleanup even on error
         return None
+    
 def get_source_distribution():
     """Generate source distribution pie chart"""
     collection = get_database_connection()
@@ -102,40 +104,47 @@ def get_source_distribution():
     return base64.b64encode(img_buffer.getvalue()).decode('utf-8')
 
 def get_timeline_data():
-    """Generate collection timeline"""
+    """Generate publication timeline (line chart) based only on published_at field."""
     collection = get_database_connection()
-    
-    # Get documents that have the processed_at field
     dates = []
+
     for doc in collection.find({}):
-        if 'processed_at' in doc:
-            dates.append(doc['processed_at'])
-        # Fallback to _id generation time if processed_at doesn't exist
-        elif '_id' in doc:
-            dates.append(doc['_id'].generation_time)
-    
+        published = doc.get('published_at')
+        if published:
+            try:
+                parsed = date_parse(published) if isinstance(published, str) else published
+                dates.append(parsed)
+            except Exception:
+                continue  # Abaikan data yang tidak bisa diparse
+
     if not dates:
+        return None  # Tidak ada tanggal valid, jangan tampilkan grafik
+
+    # Hitung jumlah artikel per hari
+    date_counts = Counter(date.strftime('%Y-%m-%d') for date in dates)
+    if not date_counts:
         return None
-    
-    # Process dates
-    date_counts = Counter([date.strftime('%Y-%m-%d') for date in dates])
-    sorted_dates = sorted(date_counts.items(), key=lambda x: x[0])
-    days = [date[0] for date in sorted_dates]
-    counts = [date[1] for date in sorted_dates]
-    
-    # Create chart
+
+    # Urutkan tanggal
+    sorted_dates = sorted(date_counts.items())
+    days = [item[0] for item in sorted_dates]
+    counts = [item[1] for item in sorted_dates]
+
+    # Buat grafik garis
     plt.figure(figsize=(12, 6))
-    plt.bar(days, counts, color='#4f77aa')
+    plt.plot(days, counts, marker='o', linestyle='-', color='#4f77aa')
     plt.xlabel('Date')
-    plt.ylabel('Articles Collected')
-    plt.title('Collection Timeline')
+    plt.ylabel('Articles Published')
+    plt.title('Publication Timeline')
     plt.xticks(rotation=45)
+    plt.grid(True)
     plt.tight_layout()
-    
-    # Convert to base64
+
+    # Simpan sebagai base64
     img_buffer = BytesIO()
     plt.savefig(img_buffer, format='PNG', bbox_inches='tight')
     plt.close()
+
     return base64.b64encode(img_buffer.getvalue()).decode('utf-8')
 
 @app.route('/')

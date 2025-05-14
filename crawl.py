@@ -34,87 +34,95 @@ def crawl_single_url(url):
         }
         response = requests.get(url, headers=headers, timeout=10)
         response.raise_for_status()
-        
+
         debug_print(f"Status {response.status_code} for {url}")
-        
+
         soup = BeautifulSoup(response.text, 'html.parser')
-        
-        # Try different selectors for articles
+
         possible_selectors = [
             {'name': 'article', 'selector': 'article'},
             {'name': 'div.post', 'selector': 'div.post'},
             {'name': 'div.blog-post', 'selector': 'div.blog-post'},
             {'name': 'div.article', 'selector': 'div.article'},
         ]
-        
+
         articles = []
         for selector in possible_selectors:
             articles = soup.select(selector['selector'])
             if articles:
                 debug_print(f"Found {len(articles)} articles using selector '{selector['name']}'")
                 break
-        
+
         if not articles:
             debug_print("No articles found with standard selectors, trying fallback")
             articles = soup.find_all(['article', 'div'], class_=lambda x: x and any(c in x.lower() for c in ['post', 'article', 'blog', 'entry']))
             debug_print(f"Found {len(articles)} articles with fallback selector")
-        
+
         new_count = 0
-        for i, article in enumerate(articles):  
+        for i, article in enumerate(articles):
             debug_print(f"\nProcessing article {i+1}/{len(articles)}")
-            
-            # Extract link
+
             sources = article.find('a', href=True)
             if not sources:
                 debug_print("No link found in article, skipping")
                 continue
-                
+
             article_url = urljoin(url, sources['href'])
             debug_print(f"Article URL: {article_url}")
-            
-            # Check if already exists
+
             if collection.find_one({'sources': article_url}):
                 debug_print("Article already in database, skipping")
                 continue
-            
-            # Fetch article content
+
             try:
                 article_resp = requests.get(article_url, headers=headers, timeout=10)
                 article_soup = BeautifulSoup(article_resp.text, 'html.parser')
-                
-                # Extract title
-                title = article_soup.find('h1')
-                if not title:
-                    title = article_soup.find('title')
+
+                title = article_soup.find('h1') or article_soup.find('title')
                 title_text = title.get_text().strip() if title else "No Title Found"
                 debug_print(f"Title: {title_text}")
-                
-                # Extract content
+
                 paragraphs = article_soup.find_all('p')
                 content = '\n'.join([p.get_text().strip() for p in paragraphs if p.get_text().strip()])
-                
-                # Save to database
+
+                # Try to extract publish date
+                publish_date = None
+                time_tag = article_soup.find('time')
+                if time_tag and (time_tag.get('datetime') or time_tag.text):
+                    publish_date = time_tag.get('datetime') or time_tag.text
+                else:
+                    meta_date = article_soup.find('meta', attrs={'property': 'article:published_time'})
+                    if not meta_date:
+                        meta_date = article_soup.find('meta', attrs={'name': 'pubdate'})
+                    if not meta_date:
+                        meta_date = article_soup.find('meta', attrs={'name': 'date'})
+                    if meta_date:
+                        publish_date = meta_date.get('content')
+
+                debug_print(f"Published at: {publish_date or 'Unknown'}")
+
                 data = {
                     'title': title_text,
                     'sources': article_url,
                     'content': content,
                     'source': url,
+                    'published_at': publish_date,
                     'crawled_at': time.time()
                 }
                 collection.insert_one(data)
                 new_count += 1
                 debug_print("Successfully saved article")
-                
+
             except Exception as e:
                 debug_print(f"Error processing article: {str(e)}")
                 continue
-                
+
         return new_count
-        
+
     except Exception as e:
         debug_print(f"Error crawling {url}: {str(e)}")
         return 0
-
+    
 def debug_crawl():
     total_new = 0
     for url in TARGET_URLS:
