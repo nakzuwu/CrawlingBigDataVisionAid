@@ -14,7 +14,8 @@ import pandas as pd
 from PIL import Image
 
 # Configuration
-MONGO_URI = 'mongodb+srv://nakzuwu:Nakzuwu1!@cluster0.yqfbchb.mongodb.net/'
+MONGO_URI = st.secrets["mongo"]["uri"]
+client = MongoClient(MONGO_URI)
 DB_NAME = 'notion_clone'
 COLLECTION_NAME = 'crawled_data'
 
