@@ -1,0 +1,7 @@
+streamlit
+pymongo
+matplotlib
+wordcloud
+python-dateutil
+numpy
+pandas
