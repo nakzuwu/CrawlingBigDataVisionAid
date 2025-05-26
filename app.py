@@ -4,7 +4,7 @@ from collections import Counter
 import re
 from datetime import datetime
 import matplotlib.pyplot as plt
-from wordcloud import WordCloud, STOPWORDS
+from wordcloud import WordCloud
 import numpy as np
 import pandas as pd
 from dateutil.parser import parse as date_parse
@@ -30,7 +30,31 @@ def generate_wordcloud():
     all_text = ' '.join(contents)
     words = re.findall(r'\b[a-zA-Z]+\b', all_text.lower())
     
-    stopwords = set(STOPWORDS)
+    stopwords = {
+            'the', 'and', 'to', 'of', 'a', 'in', 'is', 'it', 'that', 'for', 'on', 'with',
+            'as', 'at', 'by', 'this', 'be', 'are', 'was', 'were', 'an', 'or', 'you', 'your',
+            'we', 'our', 'us', 'they', 'them', 'their', 'has', 'have', 'had', 'but', 'so',
+            'if', 'can', 'will', 'would', 'should', 'could', 'about', 'from', 'how', 'what',
+            'when', 'where', 'which', 'who', 'whom', 'why', 'notion', 'todoist', 'evernote',
+            'one', 'two', 'need', 'get', 'nothing', 'day', 'life', 'all', 'these', 'just',
+            'something', 'isnt', 'new', 'off', 'well', 'back', 'thing', 'plus', 'doing',
+            'doesnt', 'there', 'every', 'always', 'somthimes', 'anohter', 'into', 'join',
+            'rather', 'out',
+            'i', 'me', 'my', 'mine', 'myself',
+            'he', 'him', 'his', 'himself',
+            'she', 'her', 'hers', 'herself',
+            'its', 'itself',
+            'ourselves', 'yourselves', 'themselves',
+            'am', 'do', 'does', 'did', 'doing',
+            'up', 'down', 'over', 'under', 'again', 'further', 'then', 'once',
+            'here', 'there', 'because', 'while', 'although', 'even', 'though',
+            'before', 'after', 'during', 'until', 'within', 'without', 'across',
+            'through', 'between', 'among', 'both', 'each', 'few', 'more', 'most',
+            'other', 'some', 'such', 'no', 'nor', 'not', 'only', 'own', 'same',
+            'than', 'too', 'very', 's', 't', 'can', 'will', 'don', 'should', 'now',
+            'also', 'still', 'yet', 'many', 'much', 'way', 'let', 'maybe', 'ok', 'okay',
+            'really', 'actually', 'ever', 'often', 'sometimes', 'always', 'almost'
+        }
     filtered_words = [word for word in words if word not in stopwords and len(word) > 2]
 
     wordcloud = WordCloud(
