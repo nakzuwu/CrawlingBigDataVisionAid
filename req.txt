@@ -1,5 +1,5 @@
 streamlit
-mongoengine
+pymongo
 matplotlib
 wordcloud
 python-dateutil
