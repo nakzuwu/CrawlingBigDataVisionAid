@@ -4,7 +4,7 @@ from collections import Counter
 import re
 from datetime import datetime
 import matplotlib.pyplot as plt
-from wordcloud import WordCloud
+from wordcloud import WordCloud, STOPWORDS
 import numpy as np
 import pandas as pd
 from dateutil.parser import parse as date_parse
@@ -26,21 +26,27 @@ def generate_wordcloud():
     contents = [doc.get('content', '') for doc in collection.find({}, {'content': 1}) if doc.get('content')]
     if not contents:
         return None
+    
     all_text = ' '.join(contents)
     words = re.findall(r'\b[a-zA-Z]+\b', all_text.lower())
-    stopwords = set([...])  # Gunakan stopwords dari kode kamu sebelumnya
+    
+    stopwords = set(STOPWORDS)
     filtered_words = [word for word in words if word not in stopwords and len(word) > 2]
 
     wordcloud = WordCloud(
-        width=1000, height=500, background_color='white', colormap='viridis',
-        max_words=150, collocations=False, stopwords=stopwords
+        width=1000,
+        height=500,
+        background_color='white',
+        colormap='viridis',
+        max_words=150,
+        collocations=False,
+        stopwords=stopwords  # ✅ Ini sudah benar
     ).generate(' '.join(filtered_words))
 
     fig, ax = plt.subplots(figsize=(10, 5))
     ax.imshow(wordcloud, interpolation='bilinear')
     ax.axis('off')
     return fig
-
 def get_source_distribution():
     sources = [doc.get('source', 'Unknown') for doc in collection.find({}, {'source': 1})]
     source_counts = Counter(sources)
